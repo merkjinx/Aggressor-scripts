@@ -50,7 +50,16 @@ Author : Halil DALABASMAZ (https://github.com/hlldz, https://twitter.com/hlldz)
 
         [Parameter(ParameterSetName = 'Id')]
         [ValidateNotNullOrEmpty()]
-        [Int]$Id = -1
+        [Int]$Id = -1,
+
+        [Parameter(Mandatory=$True)]
+        [string[]]$processName,
+
+        [Parameter(Mandatory=$False)]
+        [string[]]$threadFilter,
+
+        [Parameter(Mandatory=$False)]
+        [switch]$EnumOnly
     )
 
     $intro = @'
@@ -1012,8 +1021,8 @@ Author : Halil DALABASMAZ (https://github.com/hlldz, https://twitter.com/hlldz)
         }
 
 
-        Write-Host "[*] Enumerating threads of PID: $(Get-WmiObject -Class win32_service -Filter "name = 'eventlog'" | select -exp ProcessId)..." -ForegroundColor Yellow
-        foreach ($Process in (Get-Process -Id (Get-WmiObject -Class win32_service -Filter "name = 'eventlog'" | select -exp ProcessId)))
+        Write-Host "[*] Enumerating threads of PID: $(Get-WmiObject -Class win32_service -Filter "name = '$processName'" | select -exp ProcessId)..." -ForegroundColor Yellow
+        foreach ($Process in (Get-Process -Id (Get-WmiObject -Class win32_service -Filter "name = '$processName'" | select -exp ProcessId)))
             {
                 if (($ProcessHandle = $Kernel32::OpenProcess(0x1F0FFF, $false, $Process.Id)) -eq 0) {
                     Write-Error -Message "Unable to open handle for process $($Process.Id)... Moving on."
@@ -1038,11 +1047,25 @@ Author : Halil DALABASMAZ (https://github.com/hlldz, https://twitter.com/hlldz)
     if ($PSBoundParameters['ComputerName']) { $ReturnedObjects = Invoke-Command -ComputerName $ComputerName -ScriptBlock $RemoteScriptBlock -ArgumentList @($Name, $Id) }
     else { $ReturnedObjects = Invoke-Command -ScriptBlock $ScriptBlock -ArgumentList @($Name, $Id) }
 
-    $eventLogThreads = $ReturnedObjects | Where-Object {$_.MappedFile -like '*evt*'} | %{$_.ThreadId }
-    Write-Host "[*] Parsing Event Log Service Threads..." -ForegroundColor Yellow
+    if ($EnumOnly) {
+        Write-Host ""
+        Write-Host "[*] Threads:" -ForegroundColor Yellow
+        Write-Host ""
+
+        $ReturnedObjects
+        exit
+    }
+    
+    if (!$threadFilter){
+        Write-Error "[!] A filter to search for threads must be provided with -threadfilter e.g. 'evt' or 'cb'"
+        exit
+    }
+    
+    $eventLogThreads = $ReturnedObjects | Where-Object {$_.MappedFile -like "*$threadfilter*"} | %{$_.ThreadId }
+    Write-Host "[*] Parsing $processName Service Threads..." -ForegroundColor Yellow
 
     if(!($eventLogThreads)) {
-      Write-Host "[!] There are no Event Log Service Threads, Event Log Service is not working!" -ForegroundColor Red
+      Write-Host "[!] There are no $processName Service Threads, $processName Service is not working!" -ForegroundColor Red
       Write-Host "[+] You are ready to go!" -ForegroundColor Green
       Write-Host ""
     }
