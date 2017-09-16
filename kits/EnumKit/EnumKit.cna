@@ -78,6 +78,14 @@ popup beacon_bottom {
 				blog($1, "Once imported, run \c8Get-Help Get-MicrophoneAudio -full\c0 for full usage instructions");
 			}
 		}
+		item "Get gpu info"{
+			local('$bid');
+			foreach $bid ($1){
+				blog($1, "Getting GPU info stand by...");
+				bshell($1, "wmic PATH Win32_videocontroller GET description");
+				bshell($1, "wmic PATH Win32_videocontroller GET adapterram");
+			}
+		}
 		menu "Carbon Black"{
 			item "Get CB Server Location"{
 				local('$bid');
