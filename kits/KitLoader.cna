@@ -7,6 +7,7 @@ include(script_resource("CredKit/CredKit.cna"));
 include(script_resource("EnumKit/EnumKit.cna"));
 include(script_resource("PersistKit/PersistKit.cna"));
 include(script_resource("PrivescKit/PrivescKit.cna"));
+include(script_resource("DebugKit/DebugKit.cna"));
 include(script_resource("ThirdParty/thirdparty.cna"));
 elog("Aggressor Kit loaded by " . mynick());
 
